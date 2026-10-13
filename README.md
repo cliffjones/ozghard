@@ -1,2 +1,3 @@
-# ozghard
-A five-player chess variant loosely based on my fantasy novel The Lasting Lands (2027).
+# Ozghard
+
+A five-player chess variant loosely based on the fantasy novel _The Lasting Lands_ (2027) by Cliff Jones Jr.
