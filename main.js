@@ -187,6 +187,11 @@ let $passTurnButton;
 let $board;
 let $trail;
 
+/**
+ * Creates a debounced wrapper around a callback.
+ * @param {Function} fn
+ * @returns {Function}
+ */
 const debounce = (fn) => {
   let id;
   return (...args) => {
@@ -195,6 +200,11 @@ const debounce = (fn) => {
   };
 };
 
+/**
+ * Serializes the current game state for saving or sharing.
+ * @param {boolean} [encoded=false] Whether to compress the encoded payload.
+ * @returns {string}
+ */
 const getState = (encoded = false) => {
   const state = {};
   STATE_VARS.forEach((key) => {
@@ -210,6 +220,11 @@ const getState = (encoded = false) => {
   return stateText;
 };
 
+/**
+ * Encodes state text with a lightweight corruption marker for copy/paste safety.
+ * @param {string} stateText
+ * @returns {string}
+ */
 const encodeState = (stateText) => {
   const encodedStateText = btoa(stateText);
   if (encodedStateText.length <= CORRUPTION_POINT) {
@@ -260,6 +275,11 @@ const setState = (stateText, encoded = false) => {
   return true;
 };
 
+/**
+ * Decodes a game state string back to the plain serialized form.
+ * @param {string} stateText
+ * @returns {string}
+ */
 const decodeState = (stateText) => {
   if (stateText.length <= CORRUPTION_POINT + 1) {
     return atob(stateText);
@@ -267,6 +287,10 @@ const decodeState = (stateText) => {
   return atob(`${stateText.slice(0, CORRUPTION_POINT)}${stateText.slice(CORRUPTION_POINT + 1)}`);
 };
 
+/**
+ * Restores a saved game from local storage if available.
+ * @returns {boolean}
+ */
 const loadState = () => {
   try {
     return setState(localStorage.getItem(`ozghard${GAME}`));
@@ -344,6 +368,13 @@ const initStage = () => {
   resizeStage();
 };
 
+/**
+ * Creates a DOM element with an optional CSS class and children.
+ * @param {string} type
+ * @param {string} [className='']
+ * @param {...Node} children
+ * @returns {HTMLElement}
+ */
 const makeEl = (type, className, ...children) => {
   const $el = document.createElement(type);
   if (className) {
@@ -355,10 +386,18 @@ const makeEl = (type, className, ...children) => {
   return $el;
 };
 
+/**
+ * Hides an element by setting its display property.
+ * @param {HTMLElement|null|undefined} $el
+ */
 const hideEl = ($el) => {
   $el?.style.setProperty('display', 'none');
 };
 
+/**
+ * Shows an element by clearing its display property.
+ * @param {HTMLElement|null|undefined} $el
+ */
 const showEl = ($el) => {
   $el?.style.removeProperty('display');
 };
@@ -418,10 +457,14 @@ const makeLeftControls = () => {
   );
 };
 
+/**
+ * Pauses the match timer and reveals a modal overlay.
+ * @param {HTMLElement} $el
+ */
 const showModal = ($el) => {
   pauseTimer();
-  showEl($el)
-}
+  showEl($el);
+};
 
 const makeRightControls = () => {
   $exportButton = makeEl('button', 'CONTROLS-button CONTROLS-button--export');
@@ -485,6 +528,9 @@ const importStateFromClipboard = async () => {
   justPasted = true;
 };
 
+/**
+ * Pauses the countdown for the active turn.
+ */
 const pauseTimer = () => {
   if (!timerEnabled || isTimerPaused()) {
     return;
@@ -493,24 +539,33 @@ const pauseTimer = () => {
   turnTime++;
   $timer.classList.add('CONTROLS-timer--paused');
   renderTimer();
-}
+};
 
+/**
+ * Starts or resumes the active turn countdown.
+ */
 const startTimer = () => {
   if (!timerEnabled || !isTimerPaused()) {
     return;
   }
   $timer.classList.remove('CONTROLS-timer--paused');
   updateTimer();
-}
+};
 
+/**
+ * Resets the timer to the configured turn limit.
+ */
 const resetTimer = () => {
   turnTime = turnTimeLimit;
   clearTimeout(timerId);
   if (turnTime) {
     updateTimer();
   }
-}
+};
 
+/**
+ * Updates the timer and triggers a pass when time expires.
+ */
 const updateTimer = () => {
   if (!timerEnabled) {
     return;
@@ -788,6 +843,10 @@ const abortNewGameConfirmation = () => {
   showEl($newGameButton);
 };
 
+/**
+ * Resets the board and optionally clears the running score ledger.
+ * @param {boolean} [shouldResetScores=false]
+ */
 const resetGame = (shouldResetScores = false) => {
   if (shouldResetScores) {
     Object.keys(scores).forEach((key) => {
@@ -808,16 +867,33 @@ const resetGame = (shouldResetScores = false) => {
   renderBoard();
 };
 
+/**
+ * Returns a random index from a list of choices.
+ * @param {Array} list
+ * @returns {number}
+ */
 const getRandomItemNum = (list) => getRandomNum(list.length - 1);
 
+/**
+ * Returns a random integer between 0 and max.
+ * @param {number} max
+ * @returns {number}
+ */
 const getRandomNum = (max) => Math.floor(Math.random() * (max + 1));
 
+/**
+ * Records a pass and advances the turn cycle.
+ */
 const passTurn = () => {
   trail = null;
   passCount++;
   advanceTurn();
 };
 
+/**
+ * Advances the active team while tracking rounds, passes, and win conditions.
+ * @param {boolean} [shouldSuspendCounts=false]
+ */
 const advanceTurn = (shouldSuspendCounts = false) => {
   abortNewGameConfirmation();
   selectedSquare = [];
@@ -848,6 +924,10 @@ const advanceTurn = (shouldSuspendCounts = false) => {
   resetTimer();
 };
 
+/**
+ * Evaluates the current board to see whether a side has already won.
+ * @returns {string}
+ */
 const getWinningTeam = () => {
   let winningTeam = '';
   if (passCount >= TEAMS.length) {
@@ -1214,6 +1294,12 @@ const isOnBackRow = (team, [x, y]) => (
 
 const getRandomItem = (list) => list[Math.floor(Math.random() * list.length)] ?? null;
 
+/**
+ * Collects every legal move available to a team on a board snapshot.
+ * @param {string[][]} thisBoard
+ * @param {number} [activeOffset=0]
+ * @returns {Array<{origin:number[], target:number[]}>}
+ */
 const getMovesForTeam = (thisBoard, activeOffset = 0) => {
   const moves = [];
   const movingTeamNum = wrapItemNum(activeTeamNum + activeOffset, TEAMS.length);
@@ -1228,6 +1314,12 @@ const getMovesForTeam = (thisBoard, activeOffset = 0) => {
   return moves;
 };
 
+/**
+ * Returns the legal moves for a single piece at a coordinate.
+ * @param {string[][]} thisBoard
+ * @param {number[]} position
+ * @returns {Array<{origin:number[], target:number[]}>}
+ */
 const getMovesForPiece = (thisBoard, [x, y]) => {
   let moves = [];
   const pieceType = getPieceType(thisBoard, [x, y]);
@@ -1257,6 +1349,12 @@ const getMovesForPiece = (thisBoard, [x, y]) => {
   return moves;
 };
 
+/**
+ * Computes legal pawn motions, including two-step opening pushes and captures.
+ * @param {string[][]} thisBoard
+ * @param {number[]} position
+ * @returns {Array<{origin:number[], target:number[]}>}
+ */
 const getPawnMoves = (thisBoard, [x, y]) => {
   const moves = [];
   const team = getPieceTeam(thisBoard, [x, y]);
@@ -1327,6 +1425,12 @@ const isOpponent = (thisBoard, { origin, target }) => {
 
 const hasPiece = (thisBoard, [x, y]) => !!getPieceTeam(thisBoard, [x, y]);
 
+/**
+ * Computes L-shaped knight movements.
+ * @param {string[][]} thisBoard
+ * @param {number[]} position
+ * @returns {Array<{origin:number[], target:number[]}>}
+ */
 const getKnightMoves = (thisBoard, [x, y]) => {
   const moves = [];
   for (const [xOffset, yOffset] of KNIGHT_OFFSETS) {
@@ -1346,6 +1450,13 @@ const getKnightMoves = (thisBoard, [x, y]) => {
   return moves;
 };
 
+/**
+ * Computes sliding-piece movement along a set of directional deltas.
+ * @param {string[][]} thisBoard
+ * @param {number[]} position
+ * @param {number[][]} deltas
+ * @returns {Array<{origin:number[], target:number[]}>}
+ */
 const getSlidingMoves = (thisBoard, [x, y], deltas) => {
   const moves = [];
   for (let i = 0; i < deltas.length; i++) {
@@ -1368,6 +1479,12 @@ const getSlidingMoves = (thisBoard, [x, y], deltas) => {
   return moves;
 };
 
+/**
+ * Computes the king's one-square movements.
+ * @param {string[][]} thisBoard
+ * @param {number[]} position
+ * @returns {Array<{origin:number[], target:number[]}>}
+ */
 const getKingMoves = (thisBoard, [x, y]) => {
   const moves = [];
   for (let yOffset = -1; yOffset <= 1; yOffset++) {
@@ -1389,6 +1506,12 @@ const getKingMoves = (thisBoard, [x, y]) => {
   return moves;
 };
 
+/**
+ * Checks whether a square is currently under attack by any enemy piece.
+ * @param {string[][]} thisBoard
+ * @param {number[]} position
+ * @returns {boolean}
+ */
 const isInDanger = (thisBoard, [x, y]) => {
   const team = getPieceTeam(thisBoard, [x, y]);
   if (team !== TEAMS[activeTeamNum]) {
@@ -1403,6 +1526,12 @@ const isInDanger = (thisBoard, [x, y]) => {
   return moves.some(({ target: [targetX, targetY] }) => targetX === x && targetY === y);
 };
 
+/**
+ * Applies a move to a board snapshot without mutating the original board.
+ * @param {string[][]} thisBoard
+ * @param {{origin:number[], target:number[]}} move
+ * @returns {string[][]}
+ */
 const testMove = (thisBoard, move) => {
   const newBoard = thisBoard.map((row) => [...row]);
   const [x, y] = move.origin;
@@ -1412,6 +1541,13 @@ const testMove = (thisBoard, move) => {
   return newBoard;
 };
 
+/**
+ * Runs a shallow minimax search to score the current move tree.
+ * @param {string[][]} thisBoard
+ * @param {number} depth
+ * @param {number} activeOffset
+ * @returns {number}
+ */
 const getMinimax = (thisBoard, depth, activeOffset) => {
   if (depth <= 0) {
     return evaluateBoard(thisBoard);
@@ -1438,6 +1574,11 @@ const getMinimax = (thisBoard, depth, activeOffset) => {
   return bestScore;
 };
 
+/**
+ * Gives a board snapshot a lightweight material score for AI evaluation.
+ * @param {string[][]} thisBoard
+ * @returns {number}
+ */
 const evaluateBoard = (thisBoard) => {
   let score = 0;
   for (let y = 0; y < BOARD_SIZE; y++) {
@@ -1452,14 +1593,23 @@ const evaluateBoard = (thisBoard) => {
   return score;
 };
 
+/**
+ * Checks whether a pawn has reached the far edge of the board and should promote.
+ * @param {number[]} position
+ * @returns {boolean}
+ */
 const canPawnPromote = ([x, y]) => {
   if (getPieceType(board, [x, y]) !== PAWN) {
     return false;
   }
   const [xDelta, yDelta] = getPawnDeltas(board, [x, y]);
   return !isInsideBoard([x + xDelta, y + yDelta]);
-}
+};
 
+/**
+ * Lists the squares currently occupied by the active team.
+ * @returns {number[][]}
+ */
 const getActiveSquares = () => {
   const activeSquares = [];
   board.forEach((row, y) => {
@@ -1472,6 +1622,12 @@ const getActiveSquares = () => {
   return activeSquares;
 };
 
+/**
+ * Determines whether a space-delimited text value includes the given word.
+ * @param {string} text
+ * @param {string} word
+ * @returns {boolean}
+ */
 const hasWord = (text, word) => text?.split(' ')?.some((thisWord) => thisWord === word) ?? false;
 
 initStage();
